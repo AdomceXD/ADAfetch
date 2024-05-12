@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Get the operating system information
+os_info=$(uname -a)
+os_distro="Arch Linux"
+
+# Extract individual pieces of information
+os_kernel=$(uname -s)
+os_hostname=$(uname -n)
+os_release=$(uname -r)
+os_machine=$(uname -m)
+gpu_info=$(lspci | grep -oP 'VGA.*: \K.*')
+os_hardware=$(lspci | grep 'Host bridge' | awk '{print $6}')
+uptime=$(uptime | awk '{print $3}')
+memory_usage=$(free -h | awk '/^Mem/ {print "Total: " $2, "Used: " $3}')
+cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+shell=$(echo $SHELL)
+disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
+installed_packages=$(pacman -Qq | wc -l)
+
+# Print each piece of information separately
+echo -e "\033[1m Operating System \033[0m    $os_distro $os_machine"
+echo -e "\033[1m Kernel \033[0m              $os_release"
+echo -e "\033[1m Hostname \033[0m            $os_hostname"
+echo -e "\033[1m GPU \033[0m                 $gpu_info"
+echo -e "\033[1m Hardware Platform \033[0m   ${os_hardware:-Unknown}"
+echo -e "\033[1m Uptime \033[0m              $uptime"
+echo -e "\033[1m Memory Usage \033[0m        $memory_usage"
+echo -e "\033[1m CPU Usage \033[0m           $cpu_usage"
+echo -e "\033[1m Shell \033[0m               $shell"
+echo -e "\033[1m Disk (/) \033[0m            $disk_usage"
+echo -e "\033[1m Installed Packages \033[0m  $installed_packages"
