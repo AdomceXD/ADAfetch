@@ -1,2 +1,2 @@
 # Bebufetch
-Fetch system specifications for arch linux
+Very lightweight tool to fetch system specifications for Arch linux
