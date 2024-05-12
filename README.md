@@ -1,2 +1,2 @@
 # Bebufetch
-Fetch system specifications
+Fetch system specifications for arch linux
