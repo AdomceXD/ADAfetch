@@ -2,7 +2,32 @@
 
 # Get the operating system information
 os_info=$(uname -a)
+
+#Add your distro here. You can type literally anything, such as "LOLXD"
 os_distro="Arch Linux"
+
+#Seperate logo into several parts
+
+logo1="\e[96m                   -\`                       \e[0m"
+logo2="\e[96m                  .o+\`                      \e[0m"
+logo3="\e[96m                 \`ooo/                      \e[0m"
+logo4="\e[96m                \`+oooo:                     \e[0m"
+logo5="\e[96m               \`+oooooo:                    \e[0m"
+logo6="\e[96m               -+oooooo+:                   \e[0m"
+logo7="\e[96m             \`/:-:++oooo+:                  \e[0m"
+logo8="\e[96m            \`/++++/+++++++:                 \e[0m"
+logo9="\e[96m           \`/++++++++++++++:                \e[0m"
+logo10="\e[96m          \`/+++ooooooooooooo/\`              \e[0m"
+logo11="\e[96m         ./ooosssso++osssssso+\`             \e[0m"
+logo12="\e[96m        .oossssso-\`\`\`/ossssss+\`         \e[0m"
+logo13="\e[96m       -osssssso.      :ssssssso.           \e[0m"
+logo14="\e[96m      :osssssss/        osssso+++.          \e[0m"
+logo15="\e[96m     /ossssssss/        +ssssooo/-          \e[0m"
+logo16="\e[96m   \`/ossssso+/:-        -:/+osssso+-       \e[0m"
+logo17="\e[96m  \`+sso+:-\`                 \`.-/+oso:    \e[0m"
+logo18="\e[96m \`++:.                           \`-/+/    \e[0m"
+logo19="\e[96m .\`                                 \`     \e[0m"
+
 
 # Extract individual pieces of information
 os_kernel=$(uname -s)
@@ -19,14 +44,22 @@ disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
 installed_packages=$(pacman -Qq | wc -l)
 
 # Print each piece of information separately
-echo -e "\033[1m Operating System \033[0m    $os_distro $os_machine"
-echo -e "\033[1m Kernel \033[0m              $os_release"
-echo -e "\033[1m Hostname \033[0m            $os_hostname"
-echo -e "\033[1m GPU \033[0m                 $gpu_info"
-echo -e "\033[1m Hardware Platform \033[0m   ${os_hardware:-Unknown}"
-echo -e "\033[1m Uptime \033[0m              $uptime"
-echo -e "\033[1m Memory Usage \033[0m        $memory_usage"
-echo -e "\033[1m CPU Usage \033[0m           $cpu_usage"
-echo -e "\033[1m Shell \033[0m               $shell"
-echo -e "\033[1m Disk (/) \033[0m            $disk_usage"
-echo -e "\033[1m Installed Packages \033[0m  $installed_packages"
+echo -e "$logo1\033[1m Operating System \033[0m    $os_distro $os_machine"
+echo -e "$logo2\033[1m Kernel \033[0m              $os_release"
+echo -e "$logo3\033[1m Hostname \033[0m            $os_hostname"
+echo -e "$logo4\033[1m GPU \033[0m                 $gpu_info"
+echo -e "$logo5\033[1m Hardware Platform \033[0m   ${os_hardware:-Unknown}"
+echo -e "$logo6\033[1m Uptime \033[0m              $uptime"
+echo -e "$logo7\033[1m Memory Usage \033[0m        $memory_usage"
+echo -e "$logo8\033[1m CPU Usage \033[0m           $cpu_usage"
+echo -e "$logo9\033[1m Shell \033[0m               $shell"
+echo -e "$logo10\033[1m Disk (/) \033[0m            $disk_usage"
+echo -e "$logo11\033[1m Installed Packages \033[0m  $installed_packages"
+echo -e "$logo12"
+echo -e "$logo13"
+echo -e "$logo14"
+echo -e "$logo15"
+echo -e "$logo16"
+echo -e "$logo17"
+echo -e "$logo18"
+echo -e "$logo19"
