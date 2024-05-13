@@ -41,7 +41,9 @@ memory_usage=$(free -h | awk '/^Mem/ {print "Total: " $2, "Used: " $3}')
 cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
 shell=$(echo $SHELL)
 disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
-installed_packages=$(pacman -Qq | wc -l)
+
+#CHANGE THIS ACCORDING TO DISTRO. REPLACE "pacman" WITH DISTRO PACKAGE MANAGER (yay, rpm, etc.)
+installed_packages=$(pacman -Qq | wc -l) 
 
 # Print each piece of information separately
 echo -e "$logo1\033[1m Operating System \033[0m    $os_distro $os_machine"
