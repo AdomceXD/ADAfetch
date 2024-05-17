@@ -1,16 +1,75 @@
 #!/bin/bash
 
 # Get the operating system information
-os_info=$(uname -a)
+get_os_distro() {
+    if command -v lsb_release &> /dev/null; then
+        lsb_release -d | awk -F"\t" '{print $2}'
+    elif [ -f /etc/os-release ]; then
+        grep -oP '^PRETTY_NAME="\K[^"]+' /etc/os-release
+    else
+        echo "Unknown OS"
+    fi
+}
 
-# Automatically detect the OS distribution
-if command -v lsb_release &> /dev/null; then
-    os_distro=$(lsb_release -d | awk -F"\t" '{print $2}')
-elif [ -f /etc/os-release ]; then
-    os_distro=$(grep -oP '^PRETTY_NAME="\K[^"]+' /etc/os-release)
-else
-    os_distro="Unknown OS"
+# Function to get CPU usage
+get_cpu_usage() {
+    top -bn1 | awk '/^%Cpu/{print 100-$8"%"}'
+}
+
+# Function to get CPU information
+get_cpu_info() {
+    if [ -r /proc/cpuinfo ]; then
+        grep -m 1 'model name' /proc/cpuinfo | sed 's/model name\s*: //I'
+    else
+        echo "CPU information not available"
+    fi
+}
+
+# Function to get installed package count based on package manager
+get_installed_packages() {
+    if command -v pacman &> /dev/null; then
+        pacman -Qq | wc -l
+    elif command -v dpkg-query &> /dev/null; then
+        dpkg-query -f '${binary:Package}\n' -W | wc -l
+    elif command -v rpm &> /dev/null; then
+        rpm -qa | wc -l
+    elif command -v dnf &> /dev/null; then
+        dnf list installed | wc -l
+    elif command -v apk &> /dev/null; then
+        apk info | wc -l
+    elif command -v emerge &> /dev/null; then
+        qlist -I | wc -l
+    else
+        echo "Package manager not supported"
+    fi
+}
+
+# Gather information
+os_distro=$(get_os_distro)
+os_release=$(uname -r)
+os_hostname=$(uname -n)
+gpu_info=$(lspci | grep -oP 'VGA.*: \K.*')
+cpu_info=$(get_cpu_info)
+shell=$SHELL
+disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
+memory_usage=$(free -h | awk '/^Mem/{print "Total: " $2, "Used: " $3}')
+uptime=$(uptime -p | sed 's/up //')
+uptime_hours=$(echo $uptime | awk -F'[[:space:]:]+' '{print $2}')
+uptime_minutes=$(echo $uptime | awk -F'[[:space:]:]+' '{print $4}')
+cpu_usage=$(get_cpu_usage)
+ip_address=$(ip -4 address show | awk '/inet /&&!/127.0.0.1/{print $2; exit}')
+mac_address=$(ip link show | awk '/ether/{print $2; exit}')
+public_ip=$(curl -s https://api.ipify.org)
+battery_status="N/A"
+battery_capacity="N/A"
+if [ -d /sys/class/power_supply/BAT0 ]; then
+    battery_status=$(cat /sys/class/power_supply/BAT0/status)
+    battery_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
 fi
+process_count=$(ps aux | wc -l)
+swap_usage=$(free -h | awk '/^Swap/{print "Total: " $2, "Used: " $3}')
+last_boot=$(who -b | awk '{print $3, $4}')
+installed_packages=$(get_installed_packages)
 
 # Separate logo into several parts
 
@@ -34,60 +93,7 @@ logo17="\e[96m  \`+sso+:-\`                 \`.-/+oso:       \e[0m"
 logo18="\e[96m \`++:.                           \`-/+/      \e[0m"
 logo19="\e[96m .\`                                 \`     \e[0m"
 
-# Extract individual pieces of information
-os_kernel=$(uname -s)
-os_hostname=$(uname -n)
-os_release=$(uname -r)
-os_machine=$(uname -m)
-gpu_info=$(lspci | grep -oP 'VGA.*: \K.*')
-uptime=$(uptime -p | sed 's/up //')
-uptime_hours=$(echo $uptime | grep -oP '\d+(?= hour)')
-uptime_minutes=$(echo $uptime | grep -oP '\d+(?= minute)')
-memory_usage=$(free -h | awk '/^Mem/ {print "Total: " $2, "Used: " $3}')
-cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
-cpu_info=$(lscpu | grep 'Model name' | sed 's/Model name: *//')
-shell=$(echo $SHELL)
-disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
 
-# Network information
-ip_address=$(ip -4 address show | awk '/inet / {print $2}' | grep -v '127.0.0.1' | head -n 1)
-mac_address=$(ip link show | awk '/ether/ {print $2}' | head -n 1)
-public_ip=$(curl -s https://api.ipify.org)
-
-# Battery Status
-if [ -d /sys/class/power_supply/BAT0 ]; then
-    battery_status=$(cat /sys/class/power_supply/BAT0/status)
-    battery_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
-else
-    battery_status="N/A"
-    battery_capacity="N/A"
-fi
-
-# Number of processes
-process_count=$(ps aux | wc -l)
-
-# Swap usage
-swap_usage=$(free -h | awk '/^Swap/ {print "Total: " $2, "Used: " $3}')
-
-# Last boot time
-last_boot=$(who -b | awk '{print $3, $4}')
-
-# Automatically detect package manager and count installed packages
-if command -v pacman &> /dev/null; then
-    installed_packages=$(pacman -Qq | wc -l)
-elif command -v dpkg-query &> /dev/null; then
-    installed_packages=$(dpkg-query -f '${binary:Package}\n' -W | wc -l)
-elif command -v rpm &> /dev/null; then
-    installed_packages=$(rpm -qa | wc -l)
-elif command -v dnf &> /dev/null; then
-    installed_packages=$(dnf list installed | wc -l)
-elif command -v apk &> /dev/null; then
-    installed_packages=$(apk info | wc -l)
-elif command -v emerge &> /dev/null; then
-    installed_packages=$(qlist -I | wc -l)
-else
-    installed_packages="Package manager not supported"
-fi
 
 # Print each piece of information separately
 echo -e "$logo1\033[1m Operating System \033[0m    $os_distro $os_machine"
