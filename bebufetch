@@ -3,10 +3,16 @@
 # Get the operating system information
 os_info=$(uname -a)
 
-#Add your distro here. You can type literally anything, such as "LOLXD"
-os_distro="Arch Linux"
+# Automatically detect the OS distribution
+if command -v lsb_release &> /dev/null; then
+    os_distro=$(lsb_release -d | awk -F"\t" '{print $2}')
+elif [ -f /etc/os-release ]; then
+    os_distro=$(grep -oP '^PRETTY_NAME="\K[^"]+' /etc/os-release)
+else
+    os_distro="Unknown OS"
+fi
 
-#Seperate logo into several parts
+# Separate logo into several parts
 
 logo1="\e[96m                   -\`                       \e[0m"
 logo2="\e[96m                  .o+\`                      \e[0m"
@@ -19,15 +25,14 @@ logo8="\e[96m            \`/++++/+++++++:                 \e[0m"
 logo9="\e[96m           \`/++++++++++++++:                \e[0m"
 logo10="\e[96m          \`/+++ooooooooooooo/\`              \e[0m"
 logo11="\e[96m         ./ooosssso++osssssso+\`             \e[0m"
-logo12="\e[96m        .oossssso-\`\`\`/ossssss+\`         \e[0m"
+logo12="\e[96m        .oossssso-\`\`\`/ossssss+\`             \e[0m"
 logo13="\e[96m       -osssssso.      :ssssssso.           \e[0m"
 logo14="\e[96m      :osssssss/        osssso+++.          \e[0m"
 logo15="\e[96m     /ossssssss/        +ssssooo/-          \e[0m"
-logo16="\e[96m   \`/ossssso+/:-        -:/+osssso+-       \e[0m"
-logo17="\e[96m  \`+sso+:-\`                 \`.-/+oso:    \e[0m"
-logo18="\e[96m \`++:.                           \`-/+/    \e[0m"
+logo16="\e[96m   \`/ossssso+/:-        -:/+osssso+-        \e[0m"
+logo17="\e[96m  \`+sso+:-\`                 \`.-/+oso:       \e[0m"
+logo18="\e[96m \`++:.                           \`-/+/      \e[0m"
 logo19="\e[96m .\`                                 \`     \e[0m"
-
 
 # Extract individual pieces of information
 os_kernel=$(uname -s)
@@ -35,33 +40,81 @@ os_hostname=$(uname -n)
 os_release=$(uname -r)
 os_machine=$(uname -m)
 gpu_info=$(lspci | grep -oP 'VGA.*: \K.*')
-os_hardware=$(lspci | grep 'Host bridge' | awk '{print $6}')
-uptime=$(uptime | awk '{print $3}')
+uptime=$(uptime -p | sed 's/up //')
+uptime_hours=$(echo $uptime | grep -oP '\d+(?= hour)')
+uptime_minutes=$(echo $uptime | grep -oP '\d+(?= minute)')
 memory_usage=$(free -h | awk '/^Mem/ {print "Total: " $2, "Used: " $3}')
 cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')
+cpu_info=$(lscpu | grep 'Model name' | sed 's/Model name: *//')
 shell=$(echo $SHELL)
 disk_usage=$(df -h / | awk 'NR==2{print "Size: " $2, "Used: " $5}')
 
-#CHANGE THIS ACCORDING TO DISTRO. REPLACE "pacman" WITH DISTRO PACKAGE MANAGER (yay, rpm, etc.)
-installed_packages=$(pacman -Qq | wc -l) 
+# Network information
+ip_address=$(ip -4 address show | awk '/inet / {print $2}' | grep -v '127.0.0.1' | head -n 1)
+mac_address=$(ip link show | awk '/ether/ {print $2}' | head -n 1)
+public_ip=$(curl -s https://api.ipify.org)
+
+# Battery Status
+if [ -d /sys/class/power_supply/BAT0 ]; then
+    battery_status=$(cat /sys/class/power_supply/BAT0/status)
+    battery_capacity=$(cat /sys/class/power_supply/BAT0/capacity)
+else
+    battery_status="N/A"
+    battery_capacity="N/A"
+fi
+
+# Number of processes
+process_count=$(ps aux | wc -l)
+
+# Swap usage
+swap_usage=$(free -h | awk '/^Swap/ {print "Total: " $2, "Used: " $3}')
+
+# Last boot time
+last_boot=$(who -b | awk '{print $3, $4}')
+
+# Automatically detect package manager and count installed packages
+if command -v pacman &> /dev/null; then
+    installed_packages=$(pacman -Qq | wc -l)
+elif command -v dpkg-query &> /dev/null; then
+    installed_packages=$(dpkg-query -f '${binary:Package}\n' -W | wc -l)
+elif command -v rpm &> /dev/null; then
+    installed_packages=$(rpm -qa | wc -l)
+elif command -v dnf &> /dev/null; then
+    installed_packages=$(dnf list installed | wc -l)
+elif command -v apk &> /dev/null; then
+    installed_packages=$(apk info | wc -l)
+elif command -v emerge &> /dev/null; then
+    installed_packages=$(qlist -I | wc -l)
+else
+    installed_packages="Package manager not supported"
+fi
 
 # Print each piece of information separately
 echo -e "$logo1\033[1m Operating System \033[0m    $os_distro $os_machine"
 echo -e "$logo2\033[1m Kernel \033[0m              $os_release"
 echo -e "$logo3\033[1m Hostname \033[0m            $os_hostname"
 echo -e "$logo4\033[1m GPU \033[0m                 $gpu_info"
-echo -e "$logo5\033[1m Hardware Platform \033[0m   ${os_hardware:-Unknown}"
-echo -e "$logo6\033[1m Uptime \033[0m              $uptime"
-echo -e "$logo7\033[1m Memory Usage \033[0m        $memory_usage"
-echo -e "$logo8\033[1m CPU Usage \033[0m           $cpu_usage"
+echo -e "$logo5\033[1m CPU Info \033[0m            $cpu_info"
+echo -e "$logo6\033[1m Memory Usage \033[0m        $memory_usage"
+echo -e "$logo7\033[1m CPU Usage \033[0m           $cpu_usage"
+echo -e "$logo8\033[1m Uptime \033[0m              ${uptime_hours:-0} hours, ${uptime_minutes:-0} minutes"
 echo -e "$logo9\033[1m Shell \033[0m               $shell"
 echo -e "$logo10\033[1m Disk (/) \033[0m            $disk_usage"
 echo -e "$logo11\033[1m Installed Packages \033[0m  $installed_packages"
-echo -e "$logo12"
-echo -e "$logo13"
-echo -e "$logo14"
-echo -e "$logo15"
-echo -e "$logo16"
-echo -e "$logo17"
-echo -e "$logo18"
+echo -e "$logo12\033[1m IP Address \033[0m          $ip_address"
+echo -e "$logo13\033[1m Public IP \033[0m           $public_ip"
+echo -e "$logo14\033[1m MAC Address \033[0m         $mac_address"
+echo -e "$logo15\033[1m Battery Status \033[0m      $battery_status ($battery_capacity%)"
+echo -e "$logo16\033[1m Processes \033[0m           $process_count"
+echo -e "$logo17\033[1m Swap Usage \033[0m          $swap_usage"
+echo -e "$logo18\033[1m Last Boot \033[0m           $last_boot"
 echo -e "$logo19"
+
+# Define color codes
+colors=("0;30" "0;31" "0;32" "0;33" "0;34" "0;35" "0;36" "0;37" "1;30" "1;31" "1;32" "1;33" "1;34" "1;35" "1;36" "1;37")
+
+# Print info line for each color
+for i in "${!colors[@]}"; do
+    printf "\e[${colors[$i]}m██\e[0m"
+done
+echo ""
